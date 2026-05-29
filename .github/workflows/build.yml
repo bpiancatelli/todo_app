@@ -43,8 +43,8 @@ jobs:
             ~/.buildozer/android/platform/python-for-android
             ~/.buildozer/android/platform/android-ndk-r25b
             ~/.buildozer/android/platform/android-sdk
-          key: buildozer-sdk-v2-${{ hashFiles('buildozer.spec') }}
-          restore-keys: buildozer-sdk-v2-
+          key: buildozer-sdk-v3-${{ hashFiles('buildozer.spec') }}
+          restore-keys: buildozer-sdk-v3-
 
       - name: Set up Android SDK for Buildozer
         run: |
