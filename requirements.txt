@@ -1,5 +1,6 @@
 # Python 3.11 ou 3.12 requis (Kivy 2.3.0 ne supporte pas Python 3.13+)
-# Installation Windows : pip install kivy[base]==2.3.0 kivymd==1.2.0
-# Installation Linux   : pip install kivy==2.3.0 kivymd==1.2.0
+# Installation Windows : pip install kivy[base]==2.3.0 kivymd plyer
+# Installation Linux   : pip install kivy==2.3.0 kivymd plyer
 kivy==2.3.0
 kivymd @ https://github.com/kivymd/KivyMD/archive/master.zip
+plyer
