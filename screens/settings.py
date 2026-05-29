@@ -24,7 +24,7 @@ Builder.load_string("""
                     text: "Paramètres"
 
             MDLabel:
-                text: "Heure de réinitialisation des cases"
+                text: "Réinitialisation quotidienne des cases"
                 font_style: "Headline"
                 role: "small"
                 theme_text_color: "Custom"
@@ -32,34 +32,23 @@ Builder.load_string("""
                 size_hint_y: None
                 height: "40dp"
 
-            BoxLayout:
-                orientation: "horizontal"
+            MDLabel:
+                id: time_display
+                text: "Heure : 00:00"
+                font_style: "Body"
+                role: "large"
+                theme_text_color: "Custom"
+                text_color: 0.15, 0.15, 0.15, 1
                 size_hint_y: None
-                height: "64dp"
-                spacing: "12dp"
-
-                MDTextField:
-                    id: field_hour
-                    hint_text: "Heure (0-23)"
-                    mode: "outlined"
-                    input_filter: "int"
-                    size_hint_x: 0.45
-
-                MDTextField:
-                    id: field_minute
-                    hint_text: "Minute (0-59)"
-                    mode: "outlined"
-                    input_filter: "int"
-                    size_hint_x: 0.45
+                height: "36dp"
 
             MDButton:
-                style: "filled"
+                style: "tonal"
                 size_hint_x: None
-                width: "180dp"
-                md_bg_color: 0.2, 0.5, 0.9, 1
-                on_release: root.save_settings()
+                width: "220dp"
+                on_release: root.open_time_picker()
                 MDButtonText:
-                    text: "Enregistrer"
+                    text: "Choisir l'heure de reset"
 
             MDLabel:
                 id: status_label
@@ -76,6 +65,7 @@ from widgets.notepad_background import NotepadBackground  # noqa: F401
 
 
 class SettingsScreen(MDScreen):
+    _time_picker = None
 
     def on_enter(self):
         Clock.schedule_once(self._load_settings)
@@ -84,24 +74,38 @@ class SettingsScreen(MDScreen):
         from kivymd.app import MDApp
         app = MDApp.get_running_app()
         settings = app.store.get("settings")
-        self.ids.field_hour.text = str(settings.get("reset_hour", 0))
-        self.ids.field_minute.text = str(settings.get("reset_minute", 0))
+        h = settings.get("reset_hour", 0)
+        m = settings.get("reset_minute", 0)
+        self.ids.time_display.text = f"Heure : {h:02d}:{m:02d}"
         self.ids.status_label.text = ""
 
-    def save_settings(self):
+    def open_time_picker(self):
+        from kivymd.app import MDApp
+        from kivymd.uix.pickers import MDTimePicker
+        from datetime import time
+
+        app = MDApp.get_running_app()
+        settings = app.store.get("settings")
+        h = settings.get("reset_hour", 0)
+        m = settings.get("reset_minute", 0)
+
+        self._time_picker = MDTimePicker(time=time(h, m))
+        self._time_picker.bind(
+            on_ok=self._on_time_ok,
+            on_cancel=lambda *_: self._time_picker.dismiss(),
+        )
+        self._time_picker.open()
+
+    def _on_time_ok(self, picker, *_):
         from kivymd.app import MDApp
         app = MDApp.get_running_app()
-        try:
-            hour = max(0, min(23, int(self.ids.field_hour.text or "0")))
-            minute = max(0, min(59, int(self.ids.field_minute.text or "0")))
-        except ValueError:
-            self.ids.status_label.text = "Valeurs invalides."
-            return
-
+        t = picker.time
         settings = app.store.get("settings")
-        settings["reset_hour"] = hour
-        settings["reset_minute"] = minute
+        settings["reset_hour"] = t.hour
+        settings["reset_minute"] = t.minute
+        # Clear last_reset_at so the new time can trigger tonight
+        settings.pop("last_reset_at", None)
         app.store.put("settings", **settings)
-        self.ids.field_hour.text = str(hour)
-        self.ids.field_minute.text = str(minute)
-        self.ids.status_label.text = f"Sauvegardé : reset à {hour:02d}:{minute:02d}"
+        self.ids.time_display.text = f"Heure : {t.hour:02d}:{t.minute:02d}"
+        self.ids.status_label.text = f"Sauvegardé : reset à {t.hour:02d}:{t.minute:02d}"
+        picker.dismiss()

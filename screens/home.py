@@ -46,6 +46,8 @@ Builder.load_string("""
                     orientation: "vertical"
                     size_hint_y: None
                     height: self.minimum_height
+                    # 64dp toolbar; lines every 36dp from screen top → first line
+                    # below toolbar at 64%36=28dp offset → pad 8dp to land on line
                     padding: [0, "8dp", 0, "80dp"]
 
         MDFabButton:

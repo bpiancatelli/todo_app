@@ -2,18 +2,19 @@ from kivy.uix.boxlayout import BoxLayout
 from kivy.lang import Builder
 from kivy.properties import StringProperty, BooleanProperty, NumericProperty
 
+# LINE_SPACING from background = 36dp; tasks must match so text sits on lines
 Builder.load_string("""
 <TaskItem>:
     orientation: "horizontal"
     size_hint_y: None
-    height: "48dp"
-    padding: ["80dp", "4dp", "16dp", "4dp"]
-    spacing: "12dp"
+    height: "36dp"
+    padding: ["76dp", "2dp", "16dp", "2dp"]
+    spacing: "8dp"
 
     MDCheckbox:
         id: checkbox
         size_hint: None, None
-        size: "32dp", "32dp"
+        size: "28dp", "28dp"
         pos_hint: {"center_y": 0.5}
         active: root.done
         on_active: root.on_check(self, self.active)
@@ -24,11 +25,13 @@ Builder.load_string("""
         id: label
         text: root.text
         font_style: "Body"
-        role: "large"
+        role: "medium"
         theme_text_color: "Custom"
-        text_color: 0.15, 0.15, 0.15, 1
+        text_color: 0.10, 0.10, 0.10, 1
         pos_hint: {"center_y": 0.5}
         strikethrough: root.done
+        shorten: True
+        shorten_from: "right"
 """)
 
 

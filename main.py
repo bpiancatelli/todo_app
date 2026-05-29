@@ -3,8 +3,7 @@ from kivy.lang import Builder
 from kivy.core.window import Window
 from kivy.clock import Clock
 from kivy.storage.jsonstore import JsonStore
-from datetime import datetime, time as dtime
-import os
+from datetime import datetime
 
 from screens.home import HomeScreen
 from screens.settings import SettingsScreen
@@ -17,11 +16,6 @@ ScreenManager:
         name: "settings"
 """
 
-DAYS_MAP = {
-    0: "Lundi", 1: "Mardi", 2: "Mercredi", 3: "Jeudi",
-    4: "Vendredi", 5: "Samedi", 6: "Dimanche"
-}
-
 
 class TodoApp(MDApp):
     def build(self):
@@ -29,8 +23,7 @@ class TodoApp(MDApp):
         self.store = JsonStore("tasks.json")
         self._ensure_defaults()
         self.root = Builder.load_string(KV)
-        self._schedule_reset()
-        Clock.schedule_interval(self._check_reset, 60)
+        Clock.schedule_interval(self._check_reset, 30)
         return self.root
 
     def _ensure_defaults(self):
@@ -39,34 +32,44 @@ class TodoApp(MDApp):
         if not self.store.exists("tasks"):
             self.store.put("tasks", items=[])
 
-    def _schedule_reset(self):
-        self._last_reset_date = self.store.get("settings").get(
-            "last_reset_date", ""
-        )
-
     def _check_reset(self, dt):
         settings = self.store.get("settings")
         reset_h = settings.get("reset_hour", 0)
         reset_m = settings.get("reset_minute", 0)
         now = datetime.now()
-        today_str = now.strftime("%Y-%m-%d")
-        reset_time = dtime(reset_h, reset_m)
-        last = settings.get("last_reset_date", "")
 
-        if now.time() >= reset_time and last != today_str:
-            self._do_reset(today_str)
+        # Datetime of the scheduled reset for today
+        scheduled = now.replace(
+            hour=reset_h, minute=reset_m, second=0, microsecond=0
+        )
 
-    def _do_reset(self, today_str):
+        last_str = settings.get("last_reset_at", "")
+        try:
+            last_reset = datetime.fromisoformat(last_str)
+        except (ValueError, TypeError):
+            last_reset = datetime.min
+
+        # Reset if we've passed today's scheduled time and haven't reset since
+        if now >= scheduled and last_reset < scheduled:
+            self._do_reset(now)
+
+    def _do_reset(self, now: datetime):
         data = self.store.get("tasks")
         items = data.get("items", [])
         for task in items:
             task["done"] = False
         self.store.put("tasks", items=items)
+
         settings = self.store.get("settings")
-        settings["last_reset_date"] = today_str
+        settings["last_reset_at"] = now.isoformat()
         self.store.put("settings", **settings)
-        home = self.root.get_screen("home")
-        home.refresh_tasks()
+
+        # Refresh UI if home screen is active
+        try:
+            home = self.root.get_screen("home")
+            home.refresh_tasks()
+        except Exception:
+            pass
 
     def get_tasks_for_today(self):
         weekday = datetime.now().weekday()
