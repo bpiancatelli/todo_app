@@ -81,7 +81,7 @@ class SettingsScreen(MDScreen):
 
     def open_time_picker(self):
         from kivymd.app import MDApp
-        from kivymd.uix.pickers import MDTimePicker
+        from kivymd.uix.pickers.timepicker import MDTimePicker
         from datetime import time
 
         app = MDApp.get_running_app()
