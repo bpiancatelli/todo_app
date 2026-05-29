@@ -22,7 +22,7 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y \
-            git zip unzip \
+            git zip unzip wget \
             autoconf automake libtool pkg-config \
             zlib1g-dev libncurses5-dev libncursesw5-dev \
             cmake libffi-dev libssl-dev build-essential
@@ -35,7 +35,7 @@ jobs:
       - name: Install Buildozer
         run: pip install --upgrade buildozer cython
 
-      - name: Cache Buildozer platform
+      - name: Cache Buildozer
         uses: actions/cache@v4
         with:
           path: |
@@ -43,20 +43,36 @@ jobs:
             ~/.buildozer/android/platform/python-for-android
             ~/.buildozer/android/platform/android-ndk-r25b
             ~/.buildozer/android/platform/android-sdk
-          key: buildozer-${{ hashFiles('buildozer.spec') }}
-          restore-keys: buildozer-
+          key: buildozer-sdk-v2-${{ hashFiles('buildozer.spec') }}
+          restore-keys: buildozer-sdk-v2-
 
-      - name: Pre-accept Android SDK licenses for Buildozer
+      - name: Set up Android SDK for Buildozer
         run: |
-          # Buildozer downloads its own SDK to ~/.buildozer/android/platform/android-sdk
-          # Pre-create license files so sdkmanager never prompts interactively
-          mkdir -p ~/.buildozer/android/platform/android-sdk/licenses
-          echo "" > ~/.buildozer/android/platform/android-sdk/licenses/android-sdk-license
-          echo "8933bad161af4178b1185d1a37fbf41ea5269c55" >> ~/.buildozer/android/platform/android-sdk/licenses/android-sdk-license
-          echo "d56f5187479451eabf01fb78af6dfcb131a6481e" >> ~/.buildozer/android/platform/android-sdk/licenses/android-sdk-license
-          echo "24333f8a63b6825ea9c5514f83c2829b004d1fee" >> ~/.buildozer/android/platform/android-sdk/licenses/android-sdk-license
-          echo "" > ~/.buildozer/android/platform/android-sdk/licenses/android-sdk-preview-license
-          echo "84831b9409646a918e30573bab4c9c91346d8abd" >> ~/.buildozer/android/platform/android-sdk/licenses/android-sdk-preview-license
+          SDK_DIR="$HOME/.buildozer/android/platform/android-sdk"
+          mkdir -p "$SDK_DIR"
+
+          # Only download if sdkmanager not present
+          if [ ! -f "$SDK_DIR/tools/bin/sdkmanager" ]; then
+            echo "Downloading Android commandline-tools..."
+            wget -q https://dl.google.com/android/repository/commandlinetools-linux-6514223_latest.zip -O /tmp/cmdtools.zip
+            unzip -q /tmp/cmdtools.zip -d "$SDK_DIR"
+            # The zip extracts to tools/ — verify sdkmanager is there
+            ls "$SDK_DIR/tools/bin/"
+          fi
+
+          # Accept licenses
+          mkdir -p "$SDK_DIR/licenses"
+          printf "\n8933bad161af4178b1185d1a37fbf41ea5269c55\nd56f5187479451eabf01fb78af6dfcb131a6481e\n24333f8a63b6825ea9c5514f83c2829b004d1fee" \
+            > "$SDK_DIR/licenses/android-sdk-license"
+          printf "\n84831b9409646a918e30573bab4c9c91346d8abd" \
+            > "$SDK_DIR/licenses/android-sdk-preview-license"
+
+          # Install build-tools (contains aidl) and platform
+          yes | "$SDK_DIR/tools/bin/sdkmanager" \
+            --sdk_root="$SDK_DIR" \
+            "build-tools;34.0.0" \
+            "platforms;android-34" \
+            "platform-tools" || true
 
       - name: Build APK
         run: buildozer android debug
