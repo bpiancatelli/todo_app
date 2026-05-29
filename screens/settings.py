@@ -87,8 +87,6 @@ Builder.load_string("""
                     MDSwitch:
                         id: notif_switch
                         pos_hint: {"center_y": 0.5}
-                        size_hint_x: None
-                        width: "56dp"
                         on_active: root.on_notif_toggle(self.active)
 
                 MDLabel:
