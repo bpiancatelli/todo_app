@@ -2,17 +2,17 @@ from kivy.uix.floatlayout import FloatLayout
 from kivy.lang import Builder
 from kivy.uix.scrollview import ScrollView
 from kivy.uix.boxlayout import BoxLayout
+from kivy.clock import Clock
 from kivymd.uix.screen import MDScreen
 from kivymd.uix.dialog import MDDialog
 from kivymd.uix.button import MDFlatButton, MDRaisedButton
 from kivymd.uix.textfield import MDTextField
-from kivymd.uix.selectioncontrol import MDCheckbox
 from kivymd.uix.label import MDLabel
 from kivy.metrics import dp
 import uuid
 
-from widgets.notepad_background import NotepadBackground
-from widgets.task_item import TaskItem
+from widgets.notepad_background import NotepadBackground  # noqa: F401 — registers widget for KV
+from widgets.task_item import TaskItem  # noqa: F401
 
 Builder.load_string("""
 <HomeScreen>:
@@ -63,7 +63,7 @@ class HomeScreen(MDScreen):
     _pending_day = None
 
     def on_enter(self):
-        self.refresh_tasks()
+        Clock.schedule_once(lambda dt: self.refresh_tasks())
 
     def refresh_tasks(self):
         from kivymd.app import MDApp
