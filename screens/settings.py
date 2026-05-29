@@ -81,7 +81,7 @@ class SettingsScreen(MDScreen):
 
     def open_time_picker(self):
         from kivymd.app import MDApp
-        from kivymd.uix.pickers.timepicker import MDTimePicker
+        from kivymd.uix.pickers.timepicker import MDTimePickerDialVertical
         from datetime import time
 
         app = MDApp.get_running_app()
@@ -89,7 +89,7 @@ class SettingsScreen(MDScreen):
         h = settings.get("reset_hour", 0)
         m = settings.get("reset_minute", 0)
 
-        self._time_picker = MDTimePicker(time=time(h, m))
+        self._time_picker = MDTimePickerDialVertical(time=time(h, m))
         self._time_picker.bind(
             on_ok=self._on_time_ok,
             on_cancel=lambda *_: self._time_picker.dismiss(),
