@@ -18,6 +18,7 @@ android.permissions = RECEIVE_BOOT_COMPLETED,FOREGROUND_SERVICE,POST_NOTIFICATIO
 android.api = 34
 android.minapi = 26
 android.ndk = 28c
+p4a.branch = v2024.01.21
 android.archs = arm64-v8a, armeabi-v7a
 android.allow_backup = True
 android.icon.filename = %(source.dir)s/assets/icon.png
