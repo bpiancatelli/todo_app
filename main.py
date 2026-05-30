@@ -1,12 +1,6 @@
+import os
+import traceback
 from kivymd.app import MDApp
-from kivy.lang import Builder
-from kivy.core.window import Window
-from kivy.clock import Clock
-from kivy.storage.jsonstore import JsonStore
-from datetime import datetime
-
-from screens.home import HomeScreen
-from screens.settings import SettingsScreen
 
 KV = """
 ScreenManager:
@@ -22,28 +16,30 @@ class TodoApp(MDApp):
         try:
             return self._build()
         except Exception:
-            import traceback
             err = traceback.format_exc()
-            self._write_crash(err)
+            try:
+                with open(os.path.join(self.user_data_dir, "crash.log"), "w") as f:
+                    f.write(err)
+            except Exception:
+                pass
             from kivy.uix.label import Label
             from kivy.uix.scrollview import ScrollView
             sv = ScrollView()
-            sv.add_widget(Label(text=err, font_size="11sp", size_hint_y=None, text_size=(None, None)))
-            sv.children[0].bind(texture_size=lambda w, s: setattr(w, "size", s))
+            lbl = Label(text=err, font_size="11sp", size_hint_y=None,
+                        text_size=(800, None), halign="left")
+            lbl.bind(texture_size=lambda w, s: setattr(w, "size", s))
+            sv.add_widget(lbl)
             return sv
 
-    def _write_crash(self, err):
-        import os
-        try:
-            path = os.path.join(self.user_data_dir, "crash.log")
-            with open(path, "w") as f:
-                f.write(err)
-        except Exception:
-            pass
-
     def _build(self):
+        from kivy.lang import Builder
+        from kivy.clock import Clock
+        from kivy.storage.jsonstore import JsonStore
+        from datetime import datetime
+        from screens.home import HomeScreen   # noqa: F401
+        from screens.settings import SettingsScreen  # noqa: F401
+
         self.theme_cls.theme_style = "Light"
-        import os
         self.store = JsonStore(os.path.join(self.user_data_dir, "tasks.json"))
         self._ensure_defaults()
         self.root = Builder.load_string(KV)
@@ -64,6 +60,7 @@ class TodoApp(MDApp):
     # ── Reset ─────────────────────────────────────────────────────────
 
     def _check_reset(self, dt):
+        from datetime import datetime
         s = self.store.get("settings")
         now = datetime.now()
         scheduled = now.replace(
@@ -99,6 +96,7 @@ class TodoApp(MDApp):
     # ── Notification ──────────────────────────────────────────────────
 
     def _check_notification(self, dt):
+        from datetime import datetime
         s = self.store.get("settings")
         if not s.get("notif_enabled", False):
             return
@@ -135,18 +133,18 @@ class TodoApp(MDApp):
         self.store.put("settings", **s)
 
     def start_notification_service(self):
-        """Start Android background service for notifications when app is closed."""
         try:
             from android import AndroidService
             service = AndroidService("Todo Notification", "Surveillance des rappels")
             service.start("started")
             self._android_service = service
         except ImportError:
-            pass  # Not on Android — Clock-based check handles it
+            pass
 
     # ── Data helpers ──────────────────────────────────────────────────
 
     def get_tasks_for_today(self):
+        from datetime import datetime
         weekday = datetime.now().weekday()
         data = self.store.get("tasks")
         return [
@@ -162,5 +160,6 @@ class TodoApp(MDApp):
 
 
 if __name__ == "__main__":
+    from kivy.core.window import Window
     Window.keyboard_anim_args = {"d": 0.2, "t": "in_out_expo"}
     TodoApp().run()
