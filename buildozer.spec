@@ -19,9 +19,10 @@ android.api = 34
 android.minapi = 26
 android.ndk = 25b
 p4a.branch = v2024.01.21
-android.archs = arm64-v8a, armeabi-v7a
+android.archs = arm64-v8a
 android.allow_backup = True
 android.icon.filename = %(source.dir)s/assets/icon.png
+android.manifest.hardwareAccelerated = false
 
 [buildozer]
 log_level = 2
