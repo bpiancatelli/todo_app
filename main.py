@@ -19,6 +19,29 @@ ScreenManager:
 
 class TodoApp(MDApp):
     def build(self):
+        try:
+            return self._build()
+        except Exception:
+            import traceback
+            err = traceback.format_exc()
+            self._write_crash(err)
+            from kivy.uix.label import Label
+            from kivy.uix.scrollview import ScrollView
+            sv = ScrollView()
+            sv.add_widget(Label(text=err, font_size="11sp", size_hint_y=None, text_size=(None, None)))
+            sv.children[0].bind(texture_size=lambda w, s: setattr(w, "size", s))
+            return sv
+
+    def _write_crash(self, err):
+        import os
+        try:
+            path = os.path.join(self.user_data_dir, "crash.log")
+            with open(path, "w") as f:
+                f.write(err)
+        except Exception:
+            pass
+
+    def _build(self):
         self.theme_cls.theme_style = "Light"
         import os
         self.store = JsonStore(os.path.join(self.user_data_dir, "tasks.json"))
