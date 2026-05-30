@@ -20,7 +20,8 @@ ScreenManager:
 class TodoApp(MDApp):
     def build(self):
         self.theme_cls.theme_style = "Light"
-        self.store = JsonStore("tasks.json")
+        import os
+        self.store = JsonStore(os.path.join(self.user_data_dir, "tasks.json"))
         self._ensure_defaults()
         self.root = Builder.load_string(KV)
         Clock.schedule_interval(self._check_reset, 30)
