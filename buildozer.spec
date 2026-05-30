@@ -6,7 +6,7 @@ source.dir = .
 source.include_exts = py,png,jpg,kv,atlas,json
 version = 1.0.0
 
-requirements = python3,kivy @ https://github.com/kivy/kivy/archive/master.zip,git+https://github.com/kivymd/KivyMD@master,plyer,pillow
+requirements = python3,kivy,git+https://github.com/kivymd/KivyMD@master,plyer,pillow
 
 orientation = portrait
 fullscreen = 0
