@@ -1,4 +1,10 @@
 import os
+
+# Disable SDL2 sensor subsystem — triggers Samsung HWUI race condition on startup
+os.environ['SDL_HINT_ANDROID_SEPARATE_MOUSE_AND_TOUCH'] = '1'
+os.environ['SDL_HINT_JOYSTICK_ALLOW_BACKGROUND_EVENTS'] = '0'
+os.environ['KIVY_NO_ENV_CONFIG'] = '1'
+
 import traceback
 from kivymd.app import MDApp
 
