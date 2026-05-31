@@ -72,9 +72,12 @@ class HomeScreen(MDScreen):
     _edit_task_id = None
 
     def on_enter(self):
-        Clock.schedule_once(lambda dt: self.refresh_tasks())
+        Clock.schedule_once(lambda dt: self.refresh_tasks(), 0.1)
 
     def refresh_tasks(self):
+        if 'task_list' not in self.ids:
+            Clock.schedule_once(lambda dt: self.refresh_tasks(), 0.1)
+            return
         from kivymd.app import MDApp
         app = MDApp.get_running_app()
         task_list = self.ids['task_list']
