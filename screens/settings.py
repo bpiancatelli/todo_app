@@ -133,13 +133,13 @@ class SettingsScreen(MDScreen):
 
         rh = s.get("reset_hour", 0)
         rm = s.get("reset_minute", 0)
-        self.ids.reset_time_display.text = f"Heure : {rh:02d}:{rm:02d}"
+        self.ids["reset_time_display"].text = f"Heure : {rh:02d}:{rm:02d}"
 
         nh = s.get("notif_hour", 21)
         nm = s.get("notif_minute", 0)
-        self.ids.notif_time_display.text = f"Heure : {nh:02d}:{nm:02d}"
-        self.ids.notif_switch.active = s.get("notif_enabled", False)
-        self.ids.status_label.text = ""
+        self.ids["notif_time_display"].text = f"Heure : {nh:02d}:{nm:02d}"
+        self.ids["notif_switch"].active = s.get("notif_enabled", False)
+        self.ids["status_label"].text = ""
 
     # ── Reset time picker ─────────────────────────────────────────────
 
@@ -168,8 +168,8 @@ class SettingsScreen(MDScreen):
         s["reset_minute"] = t.minute
         s.pop("last_reset_at", None)
         app.store.put("settings", **s)
-        self.ids.reset_time_display.text = f"Heure : {t.hour:02d}:{t.minute:02d}"
-        self.ids.status_label.text = f"Reset sauvegardé : {t.hour:02d}:{t.minute:02d}"
+        self.ids["reset_time_display"].text = f"Heure : {t.hour:02d}:{t.minute:02d}"
+        self.ids["status_label"].text = f"Reset sauvegardé : {t.hour:02d}:{t.minute:02d}"
         picker.dismiss()
 
     # ── Notification toggle & picker ──────────────────────────────────
@@ -182,7 +182,7 @@ class SettingsScreen(MDScreen):
         app.store.put("settings", **s)
         if active:
             app.start_notification_service()
-        self.ids.status_label.text = (
+        self.ids["status_label"].text = (
             "Notification activée" if active else "Notification désactivée"
         )
 
@@ -211,6 +211,6 @@ class SettingsScreen(MDScreen):
         s["notif_minute"] = t.minute
         s.pop("last_notif_at", None)
         app.store.put("settings", **s)
-        self.ids.notif_time_display.text = f"Heure : {t.hour:02d}:{t.minute:02d}"
-        self.ids.status_label.text = f"Rappel sauvegardé : {t.hour:02d}:{t.minute:02d}"
+        self.ids["notif_time_display"].text = f"Heure : {t.hour:02d}:{t.minute:02d}"
+        self.ids["status_label"].text = f"Rappel sauvegardé : {t.hour:02d}:{t.minute:02d}"
         picker.dismiss()

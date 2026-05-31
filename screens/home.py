@@ -77,7 +77,7 @@ class HomeScreen(MDScreen):
     def refresh_tasks(self):
         from kivymd.app import MDApp
         app = MDApp.get_running_app()
-        task_list = self.ids.task_list
+        task_list = self.ids['task_list']
         task_list.clear_widgets()
         for task in app.get_tasks_for_today():
             item = TaskItem(
