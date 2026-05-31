@@ -37,6 +37,16 @@ class TodoApp(MDApp):
             sv.add_widget(lbl)
             return sv
 
+    def on_start(self):
+        self._request_android_permissions()
+
+    def _request_android_permissions(self):
+        try:
+            from android.permissions import request_permissions
+            request_permissions(['android.permission.POST_NOTIFICATIONS'])
+        except ImportError:
+            pass
+
     def _build(self):
         from kivy.lang import Builder
         from kivy.clock import Clock
@@ -49,6 +59,9 @@ class TodoApp(MDApp):
         self.store = JsonStore(os.path.join(self.user_data_dir, "tasks.json"))
         self._ensure_defaults()
         self.root = Builder.load_string(KV)
+        # Fire an immediate check 1s after startup, then every 30s
+        Clock.schedule_once(lambda dt: self._check_reset(dt), 1)
+        Clock.schedule_once(lambda dt: self._check_notification(dt), 1)
         Clock.schedule_interval(self._check_reset, 30)
         Clock.schedule_interval(self._check_notification, 30)
         Clock.schedule_once(lambda dt: self.start_notification_service(), 2)
@@ -85,18 +98,20 @@ class TodoApp(MDApp):
             self._do_reset(now)
 
     def _do_reset(self, now):
-        data = self.store.get("tasks")
-        items = data.get("items", [])
+        items = self.get_all_tasks()
         for task in items:
             task["done"] = False
-        self.store.put("tasks", items=items)
+        self.save_tasks(items)
 
         s = self.store.get("settings")
         s["last_reset_at"] = now.isoformat()
         self.store.put("settings", **s)
 
         try:
-            self.root.get_screen("home").refresh_tasks()
+            from kivy.clock import Clock as _Clock
+            _Clock.schedule_once(
+                lambda dt: self.root.get_screen("home").refresh_tasks(), 0
+            )
         except Exception:
             pass
 

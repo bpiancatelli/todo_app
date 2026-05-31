@@ -72,6 +72,9 @@ class HomeScreen(MDScreen):
     _edit_task_id = None
 
     def on_enter(self):
+        from kivymd.app import MDApp
+        app = MDApp.get_running_app()
+        app._check_reset(0)
         Clock.schedule_once(lambda dt: self.refresh_tasks(), 0.1)
 
     def refresh_tasks(self):
