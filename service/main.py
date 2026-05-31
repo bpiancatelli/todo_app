@@ -1,18 +1,16 @@
 """
 Android background service — runs even when the app is closed.
 Checks every minute if it's time to send the notification.
-Saved as service/main.py (separate entry point for python-for-android).
 """
 import time
 import os
 from datetime import datetime
 
-# plyer works inside the service too
 from plyer import notification
 
-STORE_PATH = os.path.join(
-    os.path.expanduser("~"), ".kivy", "tasks.json"
-)
+# p4a sets ANDROID_PRIVATE to the app's getFilesDir() — same as MDApp.user_data_dir
+_storage = os.environ.get('ANDROID_PRIVATE', os.path.expanduser('~'))
+STORE_PATH = os.path.join(_storage, 'tasks.json')
 
 
 def _load_settings():

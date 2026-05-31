@@ -51,6 +51,7 @@ class TodoApp(MDApp):
         self.root = Builder.load_string(KV)
         Clock.schedule_interval(self._check_reset, 30)
         Clock.schedule_interval(self._check_notification, 30)
+        Clock.schedule_once(lambda dt: self.start_notification_service(), 2)
         return self.root
 
     def _ensure_defaults(self):
