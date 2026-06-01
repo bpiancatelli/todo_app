@@ -22,45 +22,58 @@ def _log(msg):
 
 
 def send_notification(title, message):
+    _log("send_notification: entry")
     try:
+        _log("send_notification: importing jnius")
         from jnius import autoclass
+        _log("send_notification: jnius imported OK")
 
-        # Resolve Android context — Activity first, then Service
         context = None
+
+        # Try Service context FIRST (avoids Activity JNI crash in service process)
+        _log("send_notification: trying PythonService.mService")
         try:
-            ctx = autoclass('org.kivy.android.PythonActivity').mActivity
+            ctx = autoclass('org.kivy.android.PythonService').mService
+            _log(f"send_notification: PythonService.mService = {ctx}")
             if ctx is not None:
                 context = ctx
-        except Exception:
-            pass
+        except Exception as e:
+            _log(f"send_notification: PythonService failed: {e}")
+
+        # Fallback to Activity (when called from main app)
         if context is None:
+            _log("send_notification: trying PythonActivity.mActivity")
             try:
-                ctx = autoclass('org.kivy.android.PythonService').mService
+                ctx = autoclass('org.kivy.android.PythonActivity').mActivity
+                _log(f"send_notification: PythonActivity.mActivity = {ctx}")
                 if ctx is not None:
                     context = ctx
-            except Exception:
-                pass
+            except Exception as e:
+                _log(f"send_notification: PythonActivity failed: {e}")
+
         if context is None:
             _log("ERROR: no Android context available")
             return False
 
-        _log(f"Context: {context.getClass().getName()}")
+        _log(f"send_notification: context class = {context.getClass().getName()}")
 
+        _log("send_notification: getting NotificationManager classes")
         NotificationManager = autoclass('android.app.NotificationManager')
         NotificationChannel = autoclass('android.app.NotificationChannel')
         NotificationBuilder = autoclass('android.app.Notification$Builder')
+        _log("send_notification: classes loaded")
 
         nm = context.getSystemService(context.NOTIFICATION_SERVICE)
+        _log("send_notification: got NotificationManager")
 
-        # Create channel (idempotent)
         channel = NotificationChannel(
             CHANNEL_ID,
             'Rappels Todo',
             NotificationManager.IMPORTANCE_DEFAULT,
         )
         nm.createNotificationChannel(channel)
+        _log("send_notification: channel created")
 
-        # Safe icon: prefer app icon, fall back to system ic_dialog_info
         icon_id = context.getApplicationInfo().icon
         if not icon_id:
             icon_id = autoclass('android.R$drawable').ic_dialog_info
@@ -70,12 +83,13 @@ def send_notification(title, message):
         builder.setContentTitle(title)
         builder.setContentText(message)
         builder.setAutoCancel(True)
+        _log("send_notification: builder configured")
 
         nm.notify(NOTIF_ID, builder.build())
-        _log("Notification posted successfully")
+        _log("send_notification: notification posted successfully")
         return True
 
     except Exception as e:
         import traceback
-        _log(f"ERROR: {traceback.format_exc()}")
+        _log(f"send_notification: EXCEPTION: {traceback.format_exc()}")
         return False
