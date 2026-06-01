@@ -1,19 +1,16 @@
 """
-Android background service — runs even when the app is closed.
-Checks every 30s if it's time to send the notification.
+Android background service — started by AlarmManager at the scheduled time.
+Sends the notification, reschedules for tomorrow, then stops itself.
 """
 import os
 import sys
-import time
 from datetime import datetime
 
-# Build app root from __file__ — reliable regardless of env vars
 _service_dir = os.path.dirname(os.path.abspath(__file__))
 _app_root = os.path.dirname(_service_dir)
 if _app_root not in sys.path:
     sys.path.insert(0, _app_root)
 
-# ANDROID_PRIVATE = getFilesDir() = same path as MDApp.user_data_dir
 _storage = os.environ.get('ANDROID_PRIVATE', os.path.expanduser('~'))
 STORE_PATH = os.path.join(_storage, 'tasks.json')
 SERVICE_LOG = os.path.join(_storage, 'service.log')
@@ -38,21 +35,6 @@ def _load_settings():
         return {}
 
 
-def _should_notify(settings, now):
-    h = settings.get("notif_hour")
-    m = settings.get("notif_minute")
-    enabled = settings.get("notif_enabled", False)
-    if not enabled or h is None or m is None:
-        return False
-    scheduled = now.replace(hour=h, minute=m, second=0, microsecond=0)
-    last_str = settings.get("last_notif_at", "")
-    try:
-        last = datetime.fromisoformat(last_str)
-    except (ValueError, TypeError):
-        last = datetime.min
-    return now >= scheduled and last < scheduled
-
-
 def _mark_notified(now):
     import json
     try:
@@ -66,22 +48,52 @@ def _mark_notified(now):
 
 
 if __name__ == "__main__":
-    _log(f"Service started. app_root={_app_root}, store={STORE_PATH}")
+    _log(f"Service started (alarm trigger). app_root={_app_root}")
 
-    while True:
-        try:
+    try:
+        settings = _load_settings()
+        enabled = settings.get("notif_enabled", False)
+        notif_hour = settings.get("notif_hour", 21)
+        notif_minute = settings.get("notif_minute", 0)
+
+        _log(f"Settings: enabled={enabled}, time={notif_hour:02d}:{notif_minute:02d}")
+
+        if enabled:
             now = datetime.now()
-            settings = _load_settings()
-            if _should_notify(settings, now):
-                _log("Sending notification...")
-                from utils.notify import send_notification
-                ok = send_notification(
-                    title="Todo List",
-                    message="As-tu bien tout coche avant de dormir ?",
-                )
-                _log(f"send_notification returned: {ok}")
-                if ok:
-                    _mark_notified(now)
-        except Exception as e:
-            _log(f"Loop error: {e}")
-        time.sleep(30)
+            _log("Sending notification...")
+            from utils.notify import send_notification
+            ok = send_notification(
+                title="Todo List",
+                message="As-tu bien tout coche avant de dormir ?",
+            )
+            _log(f"send_notification returned: {ok}")
+            if ok:
+                _mark_notified(now)
+
+        # Reschedule for tomorrow regardless of whether notification was sent
+        if enabled:
+            _log(f"Rescheduling alarm for {notif_hour:02d}:{notif_minute:02d} tomorrow...")
+            try:
+                from jnius import autoclass
+                context = autoclass('org.kivy.android.PythonService').mService
+                if context is not None:
+                    from utils.alarm import schedule_alarm
+                    scheduled = schedule_alarm(context, notif_hour, notif_minute)
+                    _log(f"Alarm rescheduled: {scheduled}")
+                else:
+                    _log("ERROR: PythonService.mService is None, cannot reschedule")
+            except Exception as e:
+                _log(f"Reschedule error: {e}")
+
+    except Exception as e:
+        _log(f"Service error: {e}")
+
+    # Stop the service — it's a one-shot, not a loop
+    try:
+        from jnius import autoclass
+        svc = autoclass('org.kivy.android.PythonService').mService
+        if svc is not None:
+            svc.stopSelf()
+            _log("Service stopped itself")
+    except Exception as e:
+        _log(f"stopSelf error: {e}")

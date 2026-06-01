@@ -71,7 +71,7 @@ class TodoApp(MDApp):
         Clock.schedule_once(lambda dt: self._check_notification(dt), 1)
         Clock.schedule_interval(self._check_reset, 30)
         Clock.schedule_interval(self._check_notification, 30)
-        Clock.schedule_once(lambda dt: self.start_notification_service(), 2)
+        Clock.schedule_once(lambda dt: self._schedule_alarm_if_enabled(), 2)
         return self.root
 
     def _ensure_defaults(self):
@@ -155,13 +155,18 @@ class TodoApp(MDApp):
         s["last_notif_at"] = now.isoformat()
         self.store.put("settings", **s)
 
-    def start_notification_service(self):
+    def _schedule_alarm_if_enabled(self):
         try:
-            from android import AndroidService
-            service = AndroidService("Todo Notification", "Surveillance des rappels")
-            service.start("started")
-            self._android_service = service
-        except ImportError:
+            from jnius import autoclass
+            from utils.alarm import schedule_alarm, cancel_alarm
+            s = self.store.get("settings")
+            if not s.get("notif_enabled", False):
+                return
+            context = autoclass('org.kivy.android.PythonActivity').mActivity
+            if context is None:
+                return
+            schedule_alarm(context, s.get("notif_hour", 21), s.get("notif_minute", 0))
+        except Exception:
             pass
 
     # ── Data helpers ──────────────────────────────────────────────────

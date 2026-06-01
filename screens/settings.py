@@ -180,11 +180,24 @@ class SettingsScreen(MDScreen):
         s = app.store.get("settings")
         s["notif_enabled"] = active
         app.store.put("settings", **s)
-        if active:
-            app.start_notification_service()
+        self._apply_alarm(active, s.get("notif_hour", 21), s.get("notif_minute", 0))
         self.ids["status_label"].text = (
             "Notification activée" if active else "Notification désactivée"
         )
+
+    def _apply_alarm(self, enabled, hour, minute):
+        try:
+            from jnius import autoclass
+            from utils.alarm import schedule_alarm, cancel_alarm
+            context = autoclass('org.kivy.android.PythonActivity').mActivity
+            if context is None:
+                return
+            if enabled:
+                schedule_alarm(context, hour, minute)
+            else:
+                cancel_alarm(context)
+        except Exception:
+            pass
 
     def open_notif_picker(self):
         from kivymd.app import MDApp
@@ -213,4 +226,5 @@ class SettingsScreen(MDScreen):
         app.store.put("settings", **s)
         self.ids["notif_time_display"].text = f"Heure : {t.hour:02d}:{t.minute:02d}"
         self.ids["status_label"].text = f"Rappel sauvegardé : {t.hour:02d}:{t.minute:02d}"
+        self._apply_alarm(s.get("notif_enabled", False), t.hour, t.minute)
         picker.dismiss()
