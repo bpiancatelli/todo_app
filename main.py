@@ -139,17 +139,11 @@ class TodoApp(MDApp):
             self._send_notification(now)
 
     def _send_notification(self, now):
-        try:
-            from plyer import notification
-            notification.notify(
-                title="Todo List",
-                message="As-tu bien tout coché avant de dormir ? 🌙",
-                app_name="Ma Todo List",
-                timeout=10,
-            )
-        except Exception:
-            pass
-
+        from utils.notify import send_notification
+        send_notification(
+            title="Todo List",
+            message="As-tu bien tout coche avant de dormir ?",
+        )
         s = self.store.get("settings")
         s["last_notif_at"] = now.isoformat()
         self.store.put("settings", **s)
