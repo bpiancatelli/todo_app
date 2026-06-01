@@ -1,20 +1,30 @@
 """
 Android background service — runs even when the app is closed.
-Checks every minute if it's time to send the notification.
+Checks every 30s if it's time to send the notification.
 """
-import sys
 import os
+import sys
 import time
 from datetime import datetime
 
-# Add app root to path so utils.notify is importable from the service
-_app_root = os.environ.get('ANDROID_ARGUMENT', '')
-if _app_root and _app_root not in sys.path:
+# Build app root from __file__ — reliable regardless of env vars
+_service_dir = os.path.dirname(os.path.abspath(__file__))
+_app_root = os.path.dirname(_service_dir)
+if _app_root not in sys.path:
     sys.path.insert(0, _app_root)
 
-# p4a sets ANDROID_PRIVATE to the app's getFilesDir() — same as MDApp.user_data_dir
+# ANDROID_PRIVATE = getFilesDir() = same path as MDApp.user_data_dir
 _storage = os.environ.get('ANDROID_PRIVATE', os.path.expanduser('~'))
 STORE_PATH = os.path.join(_storage, 'tasks.json')
+SERVICE_LOG = os.path.join(_storage, 'service.log')
+
+
+def _log(msg):
+    try:
+        with open(SERVICE_LOG, 'a') as f:
+            f.write(f"{datetime.now()}: {msg}\n")
+    except Exception:
+        pass
 
 
 def _load_settings():
@@ -23,7 +33,8 @@ def _load_settings():
         with open(STORE_PATH) as f:
             data = json.load(f)
         return data.get("settings", {})
-    except Exception:
+    except Exception as e:
+        _log(f"load_settings error: {e}")
         return {}
 
 
@@ -50,19 +61,27 @@ def _mark_notified(now):
         data.setdefault("settings", {})["last_notif_at"] = now.isoformat()
         with open(STORE_PATH, "w") as f:
             json.dump(data, f)
-    except Exception:
-        pass
+    except Exception as e:
+        _log(f"mark_notified error: {e}")
 
 
 if __name__ == "__main__":
+    _log(f"Service started. app_root={_app_root}, store={STORE_PATH}")
+
     while True:
-        now = datetime.now()
-        settings = _load_settings()
-        if _should_notify(settings, now):
-            from utils.notify import send_notification
-            send_notification(
-                title="Todo List",
-                message="As-tu bien tout coche avant de dormir ?",
-            )
-            _mark_notified(now)
-        time.sleep(60)
+        try:
+            now = datetime.now()
+            settings = _load_settings()
+            if _should_notify(settings, now):
+                _log("Sending notification...")
+                from utils.notify import send_notification
+                ok = send_notification(
+                    title="Todo List",
+                    message="As-tu bien tout coche avant de dormir ?",
+                )
+                _log(f"send_notification returned: {ok}")
+                if ok:
+                    _mark_notified(now)
+        except Exception as e:
+            _log(f"Loop error: {e}")
+        time.sleep(30)

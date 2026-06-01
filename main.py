@@ -40,6 +40,13 @@ class TodoApp(MDApp):
     def on_start(self):
         self._request_android_permissions()
 
+    def on_pause(self):
+        # Keep app alive in background and let the service handle notifications
+        return True
+
+    def on_resume(self):
+        pass
+
     def _request_android_permissions(self):
         try:
             from android.permissions import request_permissions
